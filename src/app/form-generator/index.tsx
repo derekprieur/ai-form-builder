@@ -11,14 +11,47 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { generateForm } from "../actions/generateForm";
+import { useFormState, useFormStatus } from "react-dom";
+import { useSession, signIn } from "next-auth/react";
+
+const initialState: {
+  message: string;
+  data?: any;
+} = {
+  message: "",
+};
+
+export function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Generating..." : "Generate"}
+    </Button>
+  );
+}
 
 const FormGenerator = () => {
+  const [state, formAction] = useFormState(generateForm, initialState);
   const [open, setOpen] = useState(false);
+  const session = useSession();
+  console.log(session);
 
   const onFormCreate = () => {
-    setOpen(true);
+    if (session.data?.user) {
+      setOpen(true);
+    } else {
+      signIn();
+    }
   };
+
+  useEffect(() => {
+    if (state.message === "Form created") {
+      setOpen(false);
+    }
+    console.log(state);
+  }, [state.message]);
 
   return (
     <Dialog
@@ -32,7 +65,7 @@ const FormGenerator = () => {
         <DialogHeader>
           <DialogTitle>Create New Form</DialogTitle>
         </DialogHeader>
-        <form>
+        <form action={formAction}>
           <div className="grid gap-4 py-4">
             <Textarea
               id="description"
@@ -41,10 +74,11 @@ const FormGenerator = () => {
               placeholder="Share what your form is about, who is it for, and what information you would like to collect. And AI will do the magic ✧･ﾟ"
             />
           </div>
+          <DialogFooter>
+            <SubmitButton />
+            <Button variant="link">Create Manually</Button>
+          </DialogFooter>
         </form>
-        <DialogFooter>
-          <Button variant="link">Create Manually</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
