@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { saveForm } from "./mutateForm"
 
 export async function generateForm(
     prevState: {
@@ -49,6 +50,14 @@ export async function generateForm(
             })
         })
         const json = await response.json()
+        console.log(json)
+
+        const dbFormId = await saveForm({
+            name: "Testing save form",
+            description: "Testing save form description",
+            questions: JSON.parse(json.choices[0].message.content)
+        })
+        console.log(dbFormId)
 
         revalidatePath('/')
 

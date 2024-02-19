@@ -3,9 +3,21 @@ import {
     pgTable,
     text,
     primaryKey,
-    integer
+    integer,
+    serial,
+    boolean,
+    pgEnum
 } from "drizzle-orm/pg-core"
 import type { AdapterAccount } from '@auth/core/adapters'
+import { relations } from "drizzle-orm"
+
+export const formElements = pgEnum("field_type", [
+    "RadioGroup",
+    "Select",
+    "Input",
+    "Textarea",
+    "Switch"
+])
 
 export const users = pgTable("user", {
     id: text("id").notNull().primaryKey(),
@@ -56,3 +68,48 @@ export const verificationTokens = pgTable(
         compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
     })
 )
+
+export const forms = pgTable("forms", {
+    id: serial("id").primaryKey(),
+    name: text("name"),
+    description: text("description"),
+    userId: text("user_id"),
+    published: boolean("published"),
+})
+
+export const formRelations = relations(forms, ({ many, one }) => ({
+    questions: many(questions),
+    user: one(users, {
+        fields: [forms.userId],
+        references: [users.id]
+    })
+}))
+
+export const questions = pgTable("questions", {
+    id: serial("id").primaryKey(),
+    text: text("text"),
+    fieldType: formElements("field_type"),
+    formId: integer("form_id"),
+})
+
+export const questionsRelations = relations(questions, ({ many, one }) => ({
+    fieldOptions: many(fieldOptions),
+    form: one(forms, {
+        fields: [questions.formId],
+        references: [forms.id]
+    })
+}))
+
+export const fieldOptions = pgTable("fieldOptions", {
+    id: serial("id").primaryKey(),
+    text: text("text"),
+    value: text("value"),
+    questionId: integer("question_id"),
+})
+
+export const fieldOptionsRelations = relations(fieldOptions, ({ one }) => ({
+    question: one(questions, {
+        fields: [fieldOptions.questionId],
+        references: [questions.id]
+    })
+}))
